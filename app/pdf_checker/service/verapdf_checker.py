@@ -1,11 +1,10 @@
+import datetime
+import mimetypes
 import os
 import subprocess
+from io import BytesIO
 from pathlib import Path
-from io import BytesIO
-import datetime
-from tempfile import TemporaryDirectory, NamedTemporaryFile
-from io import BytesIO
-import mimetypes
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 
 def run_checker(input_file_path: str) -> str | None:

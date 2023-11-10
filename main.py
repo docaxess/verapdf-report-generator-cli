@@ -1,95 +1,47 @@
-from io import BytesIO
-from datetime import datetime
-
-import fitz
-# from app.pdf_checker.service.verapdf_checker import run_checker
-from helpers import (
-    filter_group_data_simplified,
-    # run_pdf_checker,
-    compute_status,
-)
-from pdf_generator import run_pdf_checker
-
-from pdf_generator import generate_report_pdf
-
 import argparse
+from io import BytesIO
 from pathlib import Path
-
-import base64
-import pandas as pd
-import json
-from weasyprint import HTML
-from datetime import datetime
-from pathlib import Path
-import weasyprint
-from jinja2 import Template
 from tempfile import TemporaryDirectory
-import zipfile
 
-import pandas as pd
-from io import BytesIO, StringIO
-from tempfile import TemporaryDirectory
-import os
-import json
-from pathlib import Path
-from datetime import datetime
-import re
-import codecs
-import fitz
+from helpers import generate_report_pdf, run_pdf_checker
 
 
-def process_file(filename):
+def process_file(filename, output_filename):
     # This function will handle the processing of the file
     # try:
     with open(filename, 'rb') as file:
         # Read and process the file
         content = BytesIO(file.read())
-        print("File content:")
-        print(content)
 
-    res = run_pdf_checker(content)
-    if res is None:
-        st.error("Error with file, please contact support!")
+    try:
+        res = run_pdf_checker(content)
+        if res is None:
+            exit(-1)
+    except Exception as e :
+        print("Error while running pdf checker: " + str(e))
         exit(-1)
-        ###
-    data_dict = res["report"]
 
-    file_size = len(content.getvalue())
-    pdf_document = fitz.open(stream=content.getvalue(), filetype="pdf")
-    metadata = pdf_document.metadata
-
-    ## misc
-    current_datetime: str = datetime.now().strftime("%d/%m/%Y, %H:%M")
+    # misc
     # create a tempdir for storing the images
     tmp_dir = TemporaryDirectory("")
-
-    my_dict = filter_group_data_simplified(
-        data_dict
-    )
-    pdf_bytes_simplified = generate_report_pdf(BytesIO(content.getvalue()), "en", Path(filename).name)
-    # language["pdf_bytes"] = pdf_bytes_simplified
+    pdf_bytes_simplified = generate_report_pdf(
+        BytesIO(content.getvalue()), "en", Path(filename).name)
     tmp_dir.cleanup()
-
-    # Add your file processing logic here
-    # report = generate_report_pdf(content)
-    with open("report.pdf", "wb") as file:
+    with open(output_filename, "wb") as file:
         file.write(pdf_bytes_simplified.getvalue())
-    # except FileNotFoundError:
-    #     print(f"Error: The file '{filename}' was not found.")
-    # except Exception as e:
-    #     print(f"An error occurred: {e}")
 
 def main():
     # Create the parser
-    parser = argparse.ArgumentParser(description="Process a file.")
+    parser = argparse.ArgumentParser(description="Generate a PDF report based on VeraPDF.")
 
     # Add the arguments
-    parser.add_argument('file', help="The file to be processed")
+    parser.add_argument('input_file', help="The path to the file to be checked")
+    parser.add_argument('output_file', help="The path where the report will be written")
 
     # Execute the parse_args() method
     args = parser.parse_args()
 
-    process_file(args.file)
+    process_file(args.input_file, args.output_file)
 
 if __name__ == "__main__":
     main()

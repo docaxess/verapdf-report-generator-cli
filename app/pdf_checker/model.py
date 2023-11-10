@@ -1,5 +1,4 @@
-from pydantic import BaseModel
-from pydantic import dataclasses
+from pydantic import BaseModel, dataclasses
 
 
 class ResultModel(BaseModel):

@@ -1,28 +1,26 @@
-import jinja2
-from jinja2 import Environment, FileSystemLoader
-import pandas as pd
+import base64
 import json
-from weasyprint import HTML
+import os
+import subprocess
+import sys
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import fitz
+import jinja2
+import pandas as pd
 import weasyprint
 
-import pandas as pd
-from io import BytesIO, StringIO
-from tempfile import TemporaryDirectory
-import os
 from app.pdf_checker.service.verapdf_checker import run_checker
-import json
-from pathlib import Path
-from datetime import datetime
-import re
-import codecs
-import fitz
-import base64
 
-import fitz
-import sys
-from pathlib import Path
+
+def get_metadata_one_file(filenames):
+    command = ["exiftool", "-G", "-j", filenames]
+    result = subprocess.run(command, capture_output=True, text=True)
+    output = json.loads(result.stdout)
+    return output[0]
 
 
 class add_path:
@@ -92,7 +90,7 @@ def run_pdf_checker(file_content: BytesIO) -> dict | None:
 
 
 def get_template_by_lang(lang: str = None) -> str:
-    prefix = "app/presentation/report-template"
+    prefix = "static/report-template"
     if lang == "fr":
         return f"{prefix}/template-fr.html"
     return f"{prefix}/template-en.html"
@@ -114,20 +112,19 @@ def get_nb_pages(file_content_bytes: BytesIO) -> int:
 
 
 def generate_report_pdf(
-    file_content: BytesIO, language: str, filename: str = "filename.pdf"
+    file_content: BytesIO, language: str = "en", filename: str = "filename.pdf"
 ) -> BytesIO:
     res = run_pdf_checker(file_content)
     if res is None:
-        st.error("Error with file, please contact support!")
         raise Exception("Error with file, please contact support!")
 
     data_dict = res["report"]
-    my_dict_simplified = filter_group_data_simplified(data_dict, language)
-    my_dict = my_dict_simplified
+    my_dict_simplified = filter_group_data(data_dict)
     rows_simplified = [
         {
             "Status": my_dict_simplified["ruleStatus"][i],
-            "Description": my_dict_simplified["description"][i],
+            "Clause": str(my_dict_simplified["clause"][i]),
+            "TestNumber": str(my_dict_simplified["testNumber"][i]),
             "PassedChecks": my_dict_simplified["passedChecks"][i],
             "FailedChecks": my_dict_simplified["failedChecks"][i],
         }
@@ -135,7 +132,7 @@ def generate_report_pdf(
     ]
     # Load the Jinja template
 
-    with add_path("app/application/handler/pdf_report_generator/report-template"):
+    with add_path("static/report-template"):
         with open(get_template_by_lang(language), "r") as f:
             template_str = f.read()
         template = jinja2.Template(template_str)
@@ -148,25 +145,21 @@ def generate_report_pdf(
         lang=language,
         file_size=format_bytes(file_content.getbuffer().nbytes),
         thumbnail_verapdf="vera-logo-shadow.jpg",
-        thumbnail=convert_to_base64(file_content, 128, 128),
+        thumbnail=convert_to_base64(file_content),
         file_name=filename,
         nb_pages=get_nb_pages(file_content),
-        passed_checks_totals=my_dict["passed_checks_totals"],
-        failed_checks_totals=my_dict["failed_checks_totals"],
-        passed_rules_totals=my_dict["passed_rules_totals"],
-        failed_rules_totals=my_dict["failed_rules_totals"],
-        percent_total=my_dict["percent_total"],
     )
 
     # write rendered_table_simplified into a file
 
-    html_simplified = weasyprint.HTML(string=rendered_table_simplified, base_url=".")
+    html_simplified = weasyprint.HTML(
+        string=rendered_table_simplified, base_url=".")
     pdf_bytes_simplified = BytesIO()
     html_simplified.write_pdf(target=pdf_bytes_simplified)
     return pdf_bytes_simplified
 
 
-def convert_to_base64(file_content: BytesIO, width, height):
+def convert_to_base64(file_content: BytesIO):
     file_content.seek(0)
     pdf_document = fitz.open(stream=file_content, filetype="pdf")
     with TemporaryDirectory() as tmp_dir:
@@ -192,11 +185,6 @@ def format_bytes(size):
         size /= power
         n += 1
     return "{:.2f}".format(size) + " " + power_labels[n] + "b"
-
-
-def get_nb_pages(file_content_bytes: BytesIO) -> int:
-    pdf_document = fitz.open(stream=file_content_bytes, filetype="pdf")
-    return len(pdf_document)
 
 
 def filter_group_data(data_dict: dict) -> dict:
@@ -229,14 +217,15 @@ def filter_group_data(data_dict: dict) -> dict:
     )
 
     # prepare jinja2 values
-    ## stats
+    # stats
     passed_checks_totals = df["passedChecks"].sum()
     failed_checks_totals = df["failedChecks"].sum()
     percent_total = "{:.2f}".format(
-        passed_checks_totals / (passed_checks_totals + failed_checks_totals) * 100
+        passed_checks_totals / (passed_checks_totals +
+                                failed_checks_totals) * 100
     )
 
-    ## rows
+    # rows
     my_dict = df_grouped_data.to_dict(orient="list")
     my_dict["passed_checks_totals"] = passed_checks_totals
     my_dict["failed_checks_totals"] = failed_checks_totals
@@ -244,108 +233,16 @@ def filter_group_data(data_dict: dict) -> dict:
     return my_dict
 
 
-# def convert_clause_to_simplified(clause_number: str) -> str:
-#     clause_number = clause_number["clause"]
-#     if clause_number[0] == "5":
-#         return "5-x"
-#     else:
-#         clause_number_split = clause_number.split(".")
-#         return (
-#             clause_number_split[0] + "." + clause_number_split[1].split("-")[0] + "-x"
-#         )
-
-def replace_oassed_checks_with_dash(checkpoint_name: str, passedChecks) -> str | int:
-    return '-' if '*' in checkpoint_name else passedChecks
-
-def custom_grouping_function(clause_number: str, language: str):
+def convert_clause_to_simplified(clause_number: str) -> str:
     clause_number = clause_number["clause"]
-    pdf_categories_descriptions_dict_en: dict = {
-        "5-x": "PDF Syntax",
-        "7.1-x": "PDF Syntax",
-        "7.7-x": "PDF Syntax",
-        "7.10-x": "PDF Syntax",
-        "7.11-x": "PDF Syntax",
-        "7.12-x": "PDF Syntax",
-        "7.13-x": "PDF Syntax",
-        "7.14-x": "PDF Syntax",
-        "7.15-x": "PDF Syntax",
-        "7.16-x": "PDF Syntax",
-        "7.19-x": "PDF Syntax",
-        "7.20-x": "PDF Syntax",
-        "7.2-x": "Text",
-        "7.3-x": "Graphics*",
-        "7.4-x": "Headings*",
-        "7.5-x": "Tables*",
-        "7.6-x": "Lists",
-        "7.8-x": "Page headers and footers",
-        "7.9-x": "Notes and references*",
-        "7.17-x": "Navigation",
-        "7.18-x": "Annotations",
-        "7.21-x": "Fonts",
-    }
-
-    pdf_categories_descriptions_dict_fr: dict = {
-        "5-x": "Syntaxe PDF",
-        "7.1-x": "Syntaxe PDF",
-        "7.7-x": "Syntaxe PDF",
-        "7.10-x": "Syntaxe PDF",
-        "7.11-x": "Syntaxe PDF",
-        "7.12-x": "Syntaxe PDF",
-        "7.13-x": "Syntaxe PDF",
-        "7.14-x": "Syntaxe PDF",
-        "7.15-x": "Syntaxe PDF",
-        "7.16-x": "Syntaxe PDF",
-        "7.19-x": "Syntaxe PDF",
-        "7.20-x": "Syntaxe PDF",
-        "7.2-x": "Textes",
-        "7.3-x": "Éléments graphiques*",
-        "7.4-x": "Titres*",
-        "7.5-x": "Tableaux*",
-        "7.6-x": "Listes",
-        "7.8-x": "En-têtes et pieds de pages",
-        "7.9-x": "Notes et références*",
-        "7.17-x": "Navigation",
-        "7.18-x": "Annotations",
-        "7.21-x": "Polices",
-    }
-
-    if language == "fr":
-        return pdf_categories_descriptions_dict_fr[clause_number]
-    return pdf_categories_descriptions_dict_en[clause_number]
-
-
-def custom_order_function(language: str) -> str:
-    custom_order_fr: dict = {
-        "Syntaxe PDF": 1,
-        "Textes": 2,
-        "Éléments graphiques*": 3,
-        "Titres*": 4,
-        "Tableaux*": 5,
-        "Listes": 6,
-        "En-têtes et pieds de pages": 7,
-        "Notes et références*": 8,
-        "Navigation": 9,
-        "Annotations": 10,
-        "Polices": 11,
-    }
-
-    custom_order_en: dict = {
-        "PDF Syntax": 1,
-        "Text": 2,
-        "Graphics*": 3,
-        "Headings*": 4,
-        "Tables*": 5,
-        "Lists": 6,
-        "Page headers and footers": 7,
-        "Notes and references*": 8,
-        "Navigation": 9,
-        "Annotations": 10,
-        "Fonts": 11,
-    }
-
-    if language == "en":
-        return custom_order_en
-    return custom_order_fr
+    if clause_number[0] == "5":
+        return "5-x"
+    else:
+        clause_number_split = clause_number.split(".")
+        return (
+            clause_number_split[0] + "." +
+            clause_number_split[1].split("-")[0] + "-x"
+        )
 
 
 def compute_status(failed_check: int, passed_check: int) -> str:
@@ -353,78 +250,3 @@ def compute_status(failed_check: int, passed_check: int) -> str:
         return "FAILED"
     else:
         return "PASSED"
-
-
-def filter_group_data_simplified(data_dict: dict, language: str = "en") -> dict:
-    df = pd.DataFrame(
-        data_dict["report"]["jobs"][0]["validationResult"]["details"]["ruleSummaries"]
-    )
-
-    # filter, aggregate and group data
-    filtered_data: pd.DataFrame = (
-        df.drop(
-            columns=[
-                "status",
-                "checks",
-                "test",
-                "object",
-                "ruleStatus",
-            ],
-            axis=0,
-        )
-        .sort_values(by=["clause"])
-        .reset_index(drop=True)
-    )
-    filtered_data["ruleStatus"] = filtered_data.apply(
-        lambda row: compute_status(row["failedChecks"], row["passedChecks"]), axis=1
-    )
-
-    # filtered_data["clause"] = filtered_data.apply(
-    #     lambda row: convert_clause_to_simplified(row), axis=1
-    # )
-
-    # filtered_data["description"] = filtered_data.apply(
-    #     lambda row: custom_grouping_function(row, language), axis=1
-    # )
-
-    df_grouped_data = filtered_data
-    df_grouped_data = df_grouped_data.groupby(["description"], as_index=False).agg(
-        {"passedChecks": "sum", "failedChecks": "sum"}
-    )
-    df_grouped_data["passedChecks"] = df_grouped_data.apply(
-        lambda row: replace_oassed_checks_with_dash(row["description"], row["passedChecks"]), axis=1
-    )
-    df_grouped_data["ruleStatus"] = df_grouped_data.apply(
-        lambda row: compute_status(row["failedChecks"], row["passedChecks"]), axis=1
-    )
-    ## sort data
-    df_grouped_data = df_grouped_data.sort_values(
-        by=["description"],
-        key=lambda x: x.map(custom_order_function(language)),
-    )
-
-    # prepare jinja2 values
-    ## stats
-    passed_checks_totals = df["passedChecks"].sum()
-    failed_checks_totals = df["failedChecks"].sum()
-    percent_total = "{:.2f}".format(
-        passed_checks_totals / (passed_checks_totals + failed_checks_totals) * 100
-    )
-
-    ## rows
-    my_dict = df_grouped_data.to_dict(orient="list")
-    my_dict["passed_checks_totals"] = passed_checks_totals
-    my_dict["failed_checks_totals"] = failed_checks_totals
-    my_dict["failed_rules_totals"] = (
-        (filtered_data["ruleStatus"].str.contains("FAILED")).astype("int").sum()
-    )
-    my_dict["passed_rules_totals"] = (
-        (filtered_data["ruleStatus"].str.contains("PASSED")).astype("int").sum()
-    )
-    my_dict["percent_total"] = "{:.2f}".format(
-        my_dict["passed_rules_totals"]
-        / (my_dict["passed_rules_totals"] + my_dict["failed_rules_totals"])
-        * 100
-    )
-
-    return my_dict

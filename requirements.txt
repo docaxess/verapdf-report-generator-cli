@@ -1,15 +1,5 @@
-fastapi
-mock==5.0.2
 pandas==2.0.2
-pydantic==1.10.13
 python_magic==0.4.27
-# streamlit
 pymupdf
 weasyprint
 jinja2
-typer
-# python-dotenv
-python-multipart
-uvicorn
-# boto3
-# validate_email_address
