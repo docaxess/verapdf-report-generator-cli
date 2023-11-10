@@ -1,0 +1,171 @@
+@font-face {
+  font-family: 'Mulish';
+  src: url("../fonts/Mulish-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal; }
+
+@font-face {
+  font-family: 'Mulish-bold';
+  src: url("../fonts/Mulish-Bold.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal; }
+
+* {
+  margin: 0;
+  padding: 0; }
+
+.pdf-report {
+  width: 100%;
+  margin: -50px auto;
+  color: #313839;
+  font-family: 'Mulish', sans-serif; }
+  .pdf-report .report-header {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #E52C1A; }
+    .pdf-report .report-header .logo img {
+      opacity: 1 !important;
+      display: inline-block;
+      width: 100px;
+      height: 50px; }
+    .pdf-report .report-header .logo .title {
+      font-family: 'Mulish-bold', sans-serif;
+      font-size: 20px;
+      display: inline;
+      padding-left: 20px;
+      color: #231F20;
+      position: relative;
+      top: -15px; }
+    .pdf-report .report-header .date-container {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      color: #313839; }
+  .pdf-report .pdf-info {
+    margin: 30px 0;
+    display: flex; }
+    .pdf-report .pdf-info .thumbnail {
+      width: 125px;
+      max-height: 250px;
+      padding: 20px 30px;
+      border-radius: 4px;
+      background-color: #F4F4F4;
+      margin-right: 20px; }
+      .pdf-report .pdf-info .thumbnail img {
+        display: block;
+        width: 125px;
+        height: auto; }
+    .pdf-report .pdf-info .details {
+      font-size: 17px;
+      width: 450px;
+      display: flex;
+      flex-direction: column; }
+      .pdf-report .pdf-info .details p {
+        padding-bottom: 5px; }
+      .pdf-report .pdf-info .details span {
+        font-family: 'Mulish-bold', sans-serif; }
+      .pdf-report .pdf-info .details_result {
+        margin-top: 10px;
+        display: flex;
+        align-items: center; }
+        .pdf-report .pdf-info .details_result img {
+          display: block;
+          width: 30px;
+          height: auto;
+          padding-right: 15px; }
+        .pdf-report .pdf-info .details_result p {
+          font-size: 16px; }
+          .pdf-report .pdf-info .details_result p span {
+            font-family: 'Mulish-bold', sans-serif; }
+        .pdf-report .pdf-info .details_result-passed {
+          color: #006500; }
+        .pdf-report .pdf-info .details_result-failed {
+          color: #DB0B0B; }
+  .pdf-report .pdf-score {
+    color: #313839;
+    margin-bottom: 20px;
+    font-size: 18px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    padding: 30px 50px; }
+    .pdf-report .pdf-score-passed {
+      border: 1px solid rgba(63, 165, 52, 0.5);
+      background-color: #FBFFFA; }
+      .pdf-report .pdf-score-passed .pdf-score-info p:first-child {
+        color: #006500; }
+    .pdf-report .pdf-score-failed {
+      border: 1px solid rgba(219, 11, 11, 0.5);
+      background-color: #FFF6F6; }
+      .pdf-report .pdf-score-failed .pdf-score-info p:first-child {
+        color: #DB0B0B; }
+    .pdf-report .pdf-score img {
+      display: block;
+      width: 50px;
+      height: auto;
+      padding-right: 20px; }
+    .pdf-report .pdf-score .pdf-score-info p {
+      font-size: 18px; }
+      .pdf-report .pdf-score .pdf-score-info p span {
+        font-family: 'Mulish-bold', sans-serif; }
+      .pdf-report .pdf-score .pdf-score-info p:first-child {
+        padding-bottom: 5px; }
+  .pdf-report .pdf-table {
+    width: 100%; }
+    .pdf-report .pdf-table thead tr th {
+      background-color: #2E3243;
+      padding: 5px 0;
+      color: #ffffff;
+      text-align: center; }
+      .pdf-report .pdf-table thead tr th:nth-child(1) {
+        text-align: left;
+        padding-left: 20px;
+        width: 20%; 
+      }
+       .pdf-report .pdf-table thead tr th:nth-child(2) {
+        width: 20%;
+      } 
+      .pdf-report .pdf-table thead tr th:nth-child(3) {
+        width: 20%; }
+      .pdf-report .pdf-table thead tr th:nth-child(4) {
+        width: 20%; }
+        .pdf-report .pdf-table thead tr th:nth-child(5) {
+          width: 20%; }
+
+    .pdf-report .pdf-table tbody tr:nth-child(even) {
+      background-color: #F1F3F2; }
+    .pdf-report .pdf-table tbody tr td {
+      padding: 5px 0;
+      color: #313839;
+      text-align: center; }
+      .pdf-report .pdf-table tbody tr td:nth-child(1) {
+        text-align: left;
+        padding-left: 20px;
+        width: 20%; }
+      .pdf-report .pdf-table tbody tr td:nth-child(2) {
+        width: 20%; }
+      .pdf-report .pdf-table tbody tr td:nth-child(3) {
+        width: 20%; }
+      .pdf-report .pdf-table tbody tr td:nth-child(4) {
+        width: 20%; }
+        .pdf-report .pdf-table tbody tr td:nth-child(5) {
+          width: 20%; }
+      .pdf-report .pdf-table tbody tr td.status span {
+        position: relative;
+        top: -5px; }
+      .pdf-report .pdf-table tbody tr td.status img {
+        width: 25px;
+        height: auto;
+        padding-right: 15px; }
+      .pdf-report .pdf-table tbody tr td.status-failed {
+        color: #DB0B0B; }
+      .pdf-report .pdf-table tbody tr td.status-passed {
+        color: #006500; }
+  .pdf-report .pdf-desc {
+    margin-top: 20px; }
+    .pdf-report .pdf-desc p {
+      font-size: 14px; }
+    .pdf-report .pdf-asterisk p {
+      margin-top: 7px;
+      font-size: 10px; }

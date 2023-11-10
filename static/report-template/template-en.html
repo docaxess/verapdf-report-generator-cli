@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Accessibility Report</title>
+	<link rel="stylesheet" href="./static/style.css">
+</head>
+
+<body>
+
+	<div class="pdf-report">
+		<section class="report-header">
+			<div class="logo">
+				<img src="./static/images/vera.svg" alt="veraPDF logo"/>
+				<h3 class="title">Accessibility Report</h3>
+			</div>
+			<div class="date-container">
+				<p>{{ date }}</p>
+			</div>
+		</section>
+		<section class="pdf-info">
+			<div class="thumbnail">
+				<img src="data:image/jpg;base64,{{ thumbnail }}" alt="" />
+			</div>
+			<div class="details">
+				<p><span><b>File name:</b> </span>{{file_name}}</p>
+				<p><span><b>Document title:</b></span>{% if file_title %}
+					{{ file_title }}
+					{% else %}
+					Not specified
+					{% endif %}</p>
+				<p><span><b>Main Language:</b></span>{% if lang %}
+					{{ lang }}
+					{% else %}
+					Not specified
+					{% endif %}</p>
+				<p><span><b>File Size:</b></span>{{file_size}}</p>
+				<p><span><b>Number of pages:</b></span>{{ nb_pages}}</p>
+				{% if failed_checks_totals == 0 %}
+				<div class="details_result details_result-passed">
+					<img aria-hidden="true" src="./static/images/passed-score.svg" alt="">
+					<p>This PDF file is PDF/UA compliant.</p>
+				</div>
+				{% else %}
+				<div class="details_result details_result-failed">
+					<img aria-hidden="true" src="./static/images/failed-score.svg" alt="">
+					<p>This PDF file is not PDF/UA compliant.</p>
+				</div>
+                {% endif %}
+			</div>
+		</section>
+		<section>
+			<table class="pdf-table">
+				<thead>
+				<tr>
+					<!-- <th scope="col">Checkpoints</th> -->
+					<th scope="col">Clause</th>
+					<th scope="col">Test Number</th>
+					<th scope="col">Passed</th>
+					<th scope="col">Failed</th>
+					<th scope="col">Status</th>
+				</tr>
+				</thead>
+				<tbody>
+					{% for row in rows %}
+					<tr>
+						<td >{{ row.Clause }}</td>
+						<td >{{ row.TestNumber }}</td>
+						<td>{{ row.PassedChecks }}</td>
+						<td>{{ row.FailedChecks }}</td>
+						{% if row.Status == "PASSED" %}
+						<td class="status status-passed">
+							<img src="./static/images/passed.svg" aria-hidden="true" alt="" /><span>Passed</span>
+						</td>
+						{% elif row.Status == "FAILED" %}
+						<td class="status status-failed">
+							<img src="./static/images/failed.svg" aria-hidden="true" alt="" /><span>Failed</span>
+						</td>
+						{% elif row.Status == "NOT_APPLICABLE" %}
+						<td>Not applicable</td>
+						{% endif %}
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</section>
+		</section>
+		<section class="pdf-desc">
+			<p>veraPDF Accessibility Checker performs a checking on the criteria that can be checked automatically.
+				The evaluation of the accessibility of the PDF file is performed accordingly to the ISO Standard 14289-1 (PDF/UA) using the Matterhorn Protocol.
+			</p>
+		</section>
+		<section class="pdf-desc">
+			<p>Further information on <a href="https://verapdf.org/home/">https://verapdf.org/home/</a></p>
+		</section>
+	</div>
+</body>
+
+</html>
