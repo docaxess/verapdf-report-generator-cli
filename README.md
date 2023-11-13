@@ -77,6 +77,10 @@ Instead of ua1, you can use any of those value : `{1a, 1b, 2a, 2b, 2u, 3a, 3b, 3
 The report is generated from a HTML/CSS template.
 You can customize the report appearance to suit your needs by changing files located in static folder, especially [template file](./static/report-template/template-en.html) and [style sheet](./static/style.css).
 
+# LICENSE
+
+This project is released under both the MIT and GPL licenses.
+
 # About VeraPDF
 
 VeraPDF is an opensource alternative to PAC 2021 supported by Preforma, PDF Association, Open Preservation Foundation and Digital Preservation Coalition.
